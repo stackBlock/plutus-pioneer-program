@@ -52,6 +52,10 @@ import           Prelude              (Semigroup (..))
 import           Schema               (ToSchema)
 import           Text.Printf          (printf)
 
+-- PART ONE
+
+-- data #1
+
 data Auction = Auction
     { aSeller   :: !PubKeyHash
     , aDeadline :: !Slot
@@ -71,6 +75,10 @@ instance Eq Auction where
 PlutusTx.unstableMakeIsData ''Auction
 PlutusTx.makeLift ''Auction
 
+
+-- data #2
+
+
 data Bid = Bid
     { bBidder :: !PubKeyHash
     , bBid    :: !Integer
@@ -84,11 +92,19 @@ instance Eq Bid where
 PlutusTx.unstableMakeIsData ''Bid
 PlutusTx.makeLift ''Bid
 
+
+-- data #3
+
+
 data AuctionAction = MkBid Bid | Close
     deriving Show
 
 PlutusTx.unstableMakeIsData ''AuctionAction
 PlutusTx.makeLift ''AuctionAction
+
+
+-- data #4
+
 
 data AuctionDatum = AuctionDatum
     { adAuction    :: !Auction
@@ -98,16 +114,29 @@ data AuctionDatum = AuctionDatum
 PlutusTx.unstableMakeIsData ''AuctionDatum
 PlutusTx.makeLift ''AuctionDatum
 
+
+-- data types
+
+
 data Auctioning
 instance Scripts.ScriptType Auctioning where
     type instance RedeemerType Auctioning = AuctionAction
     type instance DatumType Auctioning = AuctionDatum
+
+
+-- minBid function is an example of a function that is
+-- run on chain and is also used in the off chain
+-- part of the contract
 
 {-# INLINABLE minBid #-}
 minBid :: AuctionDatum -> Integer
 minBid AuctionDatum{..} = case adHighestBid of
     Nothing      -> aMinBid adAuction
     Just Bid{..} -> bBid + 1
+
+
+-- logic 
+
 
 {-# INLINABLE mkAuctionValidator #-}
 mkAuctionValidator :: AuctionDatum -> AuctionAction -> ValidatorCtx -> Bool
@@ -212,6 +241,10 @@ mkAuctionValidator ad redeemer ctx =
       in
         txOutAddress o == PubKeyAddress h
 
+
+-- the script
+
+
 auctionInstance :: Scripts.ScriptInstance Auctioning
 auctionInstance = Scripts.validator @Auctioning
     $$(PlutusTx.compile [|| mkAuctionValidator ||])
@@ -228,6 +261,10 @@ auctionHash = Scripts.validatorHash auctionValidator
 auctionAddress :: Ledger.Address
 auctionAddress = ScriptAddress auctionHash
 
+
+-- wallet part of the contract
+
+-- end point 1
 data StartParams = StartParams
     { spDeadline :: !Slot
     , spMinBid   :: !Integer
@@ -235,22 +272,28 @@ data StartParams = StartParams
     , spToken    :: !TokenName
     } deriving (Generic, ToJSON, FromJSON, ToSchema)
 
+-- end point 2
 data BidParams = BidParams
     { bpCurrency :: !CurrencySymbol
     , bpToken    :: !TokenName
     , bpBid      :: !Integer
     } deriving (Generic, ToJSON, FromJSON, ToSchema)
 
+-- end point 3
 data CloseParams = CloseParams
     { cpCurrency :: !CurrencySymbol
     , cpToken    :: !TokenName
     } deriving (Generic, ToJSON, FromJSON, ToSchema)
+
 
 type AuctionSchema =
     BlockchainActions
         .\/ Endpoint "start" StartParams
         .\/ Endpoint "bid"   BidParams
         .\/ Endpoint "close" CloseParams
+
+
+-- end point 1 logic
 
 start :: (HasBlockchainActions s, AsContractError e) => StartParams -> Contract w s e ()
 start StartParams{..} = do
@@ -271,6 +314,9 @@ start StartParams{..} = do
     ledgerTx <- submitTxConstraints auctionInstance tx
     void $ awaitTxConfirmed $ txId ledgerTx
     logInfo @String $ printf "started auction %s for token %s" (show a) (show v)
+
+
+-- end point 2 logic
 
 bid :: forall w s. HasBlockchainActions s => BidParams -> Contract w s Text ()
 bid BidParams{..} = do
@@ -303,6 +349,9 @@ bid BidParams{..} = do
         (show adAuction)
         (show bpCurrency)
         (show bpToken)
+
+
+-- end point 3 logic
 
 close :: forall w s. HasBlockchainActions s => CloseParams -> Contract w s Text ()
 close CloseParams{..} = do
