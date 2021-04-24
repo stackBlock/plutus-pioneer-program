@@ -11,9 +11,11 @@ License-files:       LICENSE
 library
   hs-source-dirs:      src
   exposed-modules:     Week02.Burn
+                     , Week02.BurnTwo
                      , Week02.FortyTwo
                      , Week02.Homework1
                      , Week02.Homework2
+                     , Week02.GiftTwo
                      , Week02.Gift
                      , Week02.IsData
                      , Week02.Solution1
