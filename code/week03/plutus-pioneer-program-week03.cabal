@@ -16,6 +16,7 @@ library
                      , Week03.Homework2
                      , Week03.Parameterized
                      , Week03.Vesting
+                     , Week03.VestingTwo
   build-depends:       aeson
                      , base ^>=4.14.1.0
                      , containers
