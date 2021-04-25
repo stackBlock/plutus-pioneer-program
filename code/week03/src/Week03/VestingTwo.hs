@@ -31,34 +31,38 @@ import           Playground.Types     (KnownCurrency (..))
 import           Prelude              (Semigroup (..))
 import           Text.Printf          (printf)
 
-data VestingDatum = VestingDatum
-    { beneficiary   :: PubKeyHash
-    , deadline      :: Slot
+data VestingDatum = VestingDatum    -- creating datum
+    { beneficiary   :: PubKeyHash   -- make sure ada goes to correct wallet
+    , deadline      :: Slot         -- make sure it is available after a certain slot (time)
     } deriving Show
 
-PlutusTx.unstableMakeIsData ''VestingDatum 
+PlutusTx.unstableMakeIsData ''VestingDatum  -- allows plutus to use VestingDatum data
 
 {-# INLINABLE mkValidator #-}
 mkValidator :: VestingDatum -> () -> ScriptContext -> Bool 
 mkValidator dat () ctx =  
-    traceIfFalse "Benificiary's signature is nowhere to be found!" checkSig -- using checksig function
+    traceIfFalse "Benificiary's signature is nowhere to be found!" checkSig -- using 'checksig' function
     &&
-    traceIfFalse "Come on, It's not time yet!" checkDeadline -- using checkDeadline function
+    traceIfFalse "Come on, It's not time yet!" checkDeadline -- using 'checkDeadline' function
   where
     info :: TxInfo 
     info = scriptContextTxInfo ctx 
 
-    checkSig :: Bool 
-    checkSig = beneficiary dat `elem` txInfoSignatories info
-
-    checkDeadline :: Bool 
+    checkSig :: Bool    -- maing sure that receiver wallet has the correct public key hash (inputed public key)
+    checkSig = beneficiary dat `elem` txInfoSignatories (scriptContextTxInfo ctx)
+                                                        -- using (scriptContextTxInfo ctx) 
+                                                        -- insted of info (look at info function above)
+    checkDeadline :: Bool   -- make sure the slot is after the current slot   
+                            -- 'from' current block chain slot until dealine dat (inputed deadline)                           
     checkDeadline = from (deadline dat) `contains` txInfoValidRange info 
 
+-- *** BOILERPLATE ***
 data Vesting 
 instance Scripts.ScriptType Vesting where
     type instance DatumType Vesting = VestingDatum
     type instance RedeemerType Vesting = ()
 
+-- *** BOILERPLATE ***
 inst :: Scripts.ScriptInstance Vesting 
 inst = Scripts.validator @Vesting 
     $$(PlutusTx.compile [|| mkValidator ||])
@@ -66,9 +70,11 @@ inst = Scripts.validator @Vesting
   where
     wrap = Scripts.wrapValidator @VestingDatum @()
 
+-- *** BOILERPLATE ***
 validator :: Validator 
 validator = Scripts.validatorScript inst
 
+-- *** BOILERPLATE ***
 scrAddress :: Ledger.Address 
 scrAddress = scriptAddress validator 
 
