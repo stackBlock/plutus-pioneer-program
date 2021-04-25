@@ -11,6 +11,7 @@ License-files:       LICENSE
 library
   hs-source-dirs:      src
   exposed-modules:     Week03.IsData
+                     , Week03.IsDataTwo
                      , Week03.Homework1
                      , Week03.Homework2
                      , Week03.Parameterized
