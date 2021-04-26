@@ -14,7 +14,7 @@
 module Week03.Homework2 where
 
 import           Control.Monad        hiding (fmap)
-import           Data.Aeson           (ToJSON, FromJSON)
+import           Data.Aeson           (ToJSON, FromJSON, Value (Bool))
 import           Data.Map             as Map
 import           Data.Text            (Text)
 import           Data.Void            (Void)
@@ -32,9 +32,28 @@ import           Playground.Types     (KnownCurrency (..))
 import           Prelude              (Semigroup (..))
 import           Text.Printf          (printf)
 
+-- data VestingBen = VestingBen
+--     { beneficiary :: PubKeyHash
+--     } deriving (Show)
+
+-- PlutusTx.unstableMakeIsData ''VestingBen
+-- PlutusTx.makeLift ''VestingBen
+
 {-# INLINABLE mkValidator #-}
 mkValidator :: PubKeyHash -> Slot -> () -> ScriptContext -> Bool
-mkValidator _ _ _ _ = False -- FIX ME!
+mkValidator vBen slot () ctx =
+    traceIfFalse "beneficiary signature missing" checkSig
+    &&
+    traceIfFalse "deadline not reached" checkDeadline
+  where
+    info :: TxInfo 
+    info = scriptContextTxInfo ctx
+
+    checkSig :: Bool
+    checkSig =  vBen `elem` txInfoSignatories info
+
+    checkDeadline :: Bool
+    checkDeadline = from slot `contains` txInfoValidRange info
 
 data Vesting
 instance Scripts.ScriptType Vesting where
@@ -42,13 +61,18 @@ instance Scripts.ScriptType Vesting where
     type instance RedeemerType Vesting = ()
 
 inst :: PubKeyHash -> Scripts.ScriptInstance Vesting
-inst = undefined -- IMPLEMENT ME!
+inst vBen = Scripts.validator @Vesting
+    ($$(PlutusTx.compile [|| mkValidator ||]) `PlutusTx.applyCode` PlutusTx.liftCode vBen)
+    $$(PlutusTx.compile [|| wrap ||])
+  where
+    wrap = Scripts.wrapValidator @Slot @() 
+
 
 validator :: PubKeyHash -> Validator
-validator = undefined -- IMPLEMENT ME!
+validator = Scripts.validatorScript . inst
 
 scrAddress :: PubKeyHash -> Ledger.Address
-scrAddress = undefined -- IMPLEMENT ME!
+scrAddress = scriptAddress . validator
 
 data GiveParams = GiveParams
     { gpBeneficiary :: !PubKeyHash
