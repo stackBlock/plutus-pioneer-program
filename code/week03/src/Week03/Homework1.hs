@@ -52,15 +52,15 @@ mkValidator dat () ctx =
     &&
     traceIfFalse "Come on, It's not time yet!" checkDeadline2) -- using 'checkDeadline' function
   where
-    info :: TxInfo 
-    info = scriptContextTxInfo ctx 
+    -- info :: TxInfo 
+    -- info = scriptContextTxInfo ctx 
 
     checkSig1 :: Bool    -- maing sure that receiver wallet has the correct public key hash (inputed public key)
     checkSig1 = beneficiary1 dat `elem` txInfoSignatories (scriptContextTxInfo ctx)
                                                         -- using (scriptContextTxInfo ctx) 
                                                         -- insted of info (look at info function above)
-    checkDeadline1 :: Bool   -- make sure the slot is after the current slot   
-                            -- 'from' current block chain slot until dealine dat (inputed deadline)                           
+    checkDeadline1 :: Bool   -- make sure the slot is before the current slot   
+                            -- 'to' current block chain slot before dealine dat (inputed deadline)                           
     checkDeadline1 = to (deadline dat) `contains` txInfoValidRange info 
 
     checkSig2 :: Bool    -- maing sure that receiver wallet has the correct public key hash (inputed public key)
