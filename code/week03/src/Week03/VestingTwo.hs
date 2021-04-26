@@ -54,7 +54,7 @@ mkValidator dat () ctx =
                                                         -- insted of info (look at info function above)
     checkDeadline :: Bool   -- make sure the slot is after the current slot   
                             -- 'from' current block chain slot until dealine dat (inputed deadline)                           
-    checkDeadline = from (deadline dat) `contains` txInfoValidRange info 
+    checkDeadline = to (deadline dat) `contains` txInfoValidRange info 
 
 -- *** BOILERPLATE ***
 data Vesting 
@@ -169,7 +169,7 @@ grab = do
             Nothing        -> False
             Just (Datum e) -> case PlutusTx.fromData e of
                 Nothing -> False
-                Just d  -> beneficiary d == pkh && deadline d <= now
+                Just d  -> beneficiary d == pkh && deadline d >= now
 
 endpoints :: Contract () VestingSchema Text ()
 endpoints = (give' `select` grab') >> endpoints
