@@ -1,4 +1,5 @@
 module Week04.Monad where
+-- module Monad where
 
 -- (>>=)      :: IO a            -> (a -> IO b)            -> IO b
 -- bindMaybe  :: Maybe a         -> (a -> Maybe b)         -> Maybe b
