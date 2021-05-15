@@ -14,12 +14,18 @@ import Plutus.Trace.Emulator      as Emulator
 import Wallet.Emulator.Wallet
 
 -- Contract w s e a
+    --  w - (writer monad example) allows you to write log messages    
+    --  s - describes blockchain capablilities - blockchain specific actions (waiting for slot, submitting trans, own public key, specific endpoints)        
+    --  e - type of error messages    
+    --  a - denotes result 
+
 -- EmulatorTrace a
 
 myContract1 :: Contract () BlockchainActions Text ()
+            -- w = (), s = BlockchainActions, e = Text, a = ()
 myContract1 = do
-    void $ Contract.throwError "BOOM!"
-    Contract.logInfo @String "Hello from the contract!"
+    void $ Contract.throwError "Booom!"
+    Contract.logInfo @String "Hello from inside the contract!"
 
 myTrace1 :: EmulatorTrace ()
 myTrace1 = void $ activateContractWallet (Wallet 1) myContract1
@@ -27,10 +33,14 @@ myTrace1 = void $ activateContractWallet (Wallet 1) myContract1
 test1 :: IO ()
 test1 = runEmulatorTraceIO myTrace1
 
+
+
+
 myContract2 :: Contract () BlockchainActions Void ()
-myContract2 = Contract.handleError
+            -- w = (), s = BlockchainActions, e = Text, a = ()
+myContract2 = Contract.handleError 
     (\err -> Contract.logError $ "Caught error: " ++ unpack err)
-    myContract1
+    myContract1 
 
 myTrace2 :: EmulatorTrace ()
 myTrace2 = void $ activateContractWallet (Wallet 1) myContract2
@@ -38,28 +48,63 @@ myTrace2 = void $ activateContractWallet (Wallet 1) myContract2
 test2 :: IO ()
 test2 = runEmulatorTraceIO myTrace2
 
+
+
+
+
+
+
+
+
+
+
+
 type MySchema = BlockchainActions .\/ Endpoint "foo" Int
 
 myContract3 :: Contract () MySchema Text ()
 myContract3 = do
     n <- endpoint @"foo"
-    Contract.logInfo n
+    Contract.logInfo n 
 
 myTrace3 :: EmulatorTrace ()
 myTrace3 = do
-    h <- activateContractWallet (Wallet 1) myContract3
-    callEndpoint @"foo" h 42
+    h <- activateContractWallet (Wallet 1)  myContract3
+    callEndpoint @"foo" h 42 
 
 test3 :: IO ()
 test3 = runEmulatorTraceIO myTrace3
 
-myContract4 :: Contract [Int] BlockchainActions Text ()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+myContract4 :: Contract String BlockchainActions Text ()
 myContract4 = do
     void $ Contract.waitNSlots 10
-    tell [1]
+    tell "one, "
     void $ Contract.waitNSlots 10
-    tell [2]
+    tell "two"
     void $ Contract.waitNSlots 10
+
 
 myTrace4 :: EmulatorTrace ()
 myTrace4 = do
@@ -77,5 +122,82 @@ myTrace4 = do
     zs <- observableState h
     Extras.logInfo $ show zs
 
+
 test4 :: IO ()
 test4 = runEmulatorTraceIO myTrace4
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- myContract1 :: Contract () BlockchainActions Text ()
+-- myContract1 = do
+--     void $ Contract.throwError "BOOM!"
+--     Contract.logInfo @String "Hello from the contract!"
+
+-- myTrace1 :: EmulatorTrace ()
+-- myTrace1 = void $ activateContractWallet (Wallet 1) myContract1
+
+-- test1 :: IO ()
+-- test1 = runEmulatorTraceIO myTrace1
+
+-- myContract2 :: Contract () BlockchainActions Void ()
+-- myContract2 = Contract.handleError
+--     (\err -> Contract.logError $ "Caught error: " ++ unpack err)
+--     myContract1
+
+-- myTrace2 :: EmulatorTrace ()
+-- myTrace2 = void $ activateContractWallet (Wallet 1) myContract2
+
+-- test2 :: IO ()
+-- test2 = runEmulatorTraceIO myTrace2
+
+-- type MySchema = BlockchainActions .\/ Endpoint "foo" Int
+
+-- myContract3 :: Contract () MySchema Text ()
+-- myContract3 = do
+--     n <- endpoint @"foo"
+--     Contract.logInfo n
+
+-- myTrace3 :: EmulatorTrace ()
+-- myTrace3 = do
+--     h <- activateContractWallet (Wallet 1) myContract3
+--     callEndpoint @"foo" h 42
+
+-- test3 :: IO ()
+-- test3 = runEmulatorTraceIO myTrace3
+
+-- myContract4 :: Contract [Int] BlockchainActions Text ()
+-- myContract4 = do
+--     void $ Contract.waitNSlots 10
+--     tell [1]
+--     void $ Contract.waitNSlots 10
+--     tell [2]
+--     void $ Contract.waitNSlots 10
+
+-- myTrace4 :: EmulatorTrace ()
+-- myTrace4 = do
+--     h <- activateContractWallet (Wallet 1) myContract4
+
+--     void $ Emulator.waitNSlots 5
+--     xs <- observableState h
+--     Extras.logInfo $ show xs
+
+--     void $ Emulator.waitNSlots 10
+--     ys <- observableState h
+--     Extras.logInfo $ show ys
+
+--     void $ Emulator.waitNSlots 10
+--     zs <- observableState h
+--     Extras.logInfo $ show zs
+
+-- test4 :: IO ()
+-- test4 = runEmulatorTraceIO myTrace4

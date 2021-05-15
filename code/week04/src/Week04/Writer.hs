@@ -1,10 +1,13 @@
 module Week04.Writer where
 
 import Control.Monad
-import Monad
+import Week04.Monad
 
 data Writer a = Writer a [String]   
     deriving (Show)
+
+
+    -- EXAMPLE #1
 
 number :: Int -> Writer Int
 number n = Writer n $ ["numberer: " ++ show n]
@@ -21,6 +24,7 @@ foo (Writer k xs) (Writer l ys) (Writer m zs) =
     Writer s $ xs ++ ys ++ zs ++ us  
 
 
+    -- EXAMPLE # 2 (Same output as exaple #1)
 
 
 bindWriter :: Writer a -> (a -> Writer b) -> Writer b
